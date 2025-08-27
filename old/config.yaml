@@ -1,0 +1,69 @@
+# Configuration for Dataflow Kafka to BigQuery Pipeline
+
+# Local Development Environment (DirectRunner)
+local:
+  runner: "DirectRunner"
+  kafka:
+    bootstrap_servers: "localhost:9092"
+    consumer_group: "dataflow-demo-local"
+    topics:
+      - name: "user-events"
+        raw_table: "raw_user_events"
+        agg_table: "user_events_agg"
+        dlq_table: "dlq_user_events"
+      - name: "product-updates"
+        raw_table: "raw_product_updates"
+        agg_table: "product_updates_agg"
+        dlq_table: "dlq_product_updates"
+      - name: "user-profiles"
+        raw_table: "raw_user_profiles"
+        agg_table: "user_profiles_agg"
+        dlq_table: "dlq_user_profiles"
+
+  bigquery:
+    project_id: "your-project-id"  # Update this with your GCP project
+    dataset: "dataflow_demo_local"
+    location: "US"
+
+  pipeline:
+    window_duration_seconds: 60
+    allowed_lateness_seconds: 30
+    streaming: true
+
+# Cloud Environment (DataflowRunner)
+cloud:
+  runner: "DataflowRunner"
+  kafka:
+    bootstrap_servers: "kafka-broker.internal:9092"  # Future: Cloud Kafka
+    consumer_group: "dataflow-demo-prod"
+    topics:
+      - name: "user-events"
+        raw_table: "raw_user_events"
+        agg_table: "user_events_agg"
+        dlq_table: "dlq_user_events"
+      - name: "product-updates"
+        raw_table: "raw_product_updates"
+        agg_table: "product_updates_agg"
+        dlq_table: "dlq_product_updates"
+      - name: "user-profiles"
+        raw_table: "raw_user_profiles"
+        agg_table: "user_profiles_agg"
+        dlq_table: "dlq_user_profiles"
+
+  bigquery:
+    project_id: "your-project-id"  # Update this with your GCP project
+    dataset: "dataflow_demo_prod"
+    location: "US"
+
+  gcp:
+    region: "us-central1"
+    temp_location: "gs://your-bucket/temp"
+    staging_location: "gs://your-bucket/staging"
+    service_account: "dataflow-sa@your-project.iam.gserviceaccount.com"
+
+  pipeline:
+    window_duration_seconds: 300  # 5 minutes for production
+    allowed_lateness_seconds: 600  # 10 minutes for production
+    streaming: true
+    max_num_workers: 10
+    num_workers: 2
