@@ -76,26 +76,39 @@ def run_pipeline(config, args):
 
     logging.info(f"Writing to BigQuery table: {table_spec}")
 
-    # Create and run pipeline
-    with beam.Pipeline(options=pipeline_options) as pipeline:
+    # Create the pipeline
+    pipeline = beam.Pipeline(options=pipeline_options)
 
-        # Read from Kafka
-        kafka_source = create_kafka_source(
-            bootstrap_servers=config['kafka']['bootstrap_servers'],
-            topic='user-events',
-            consumer_group=config['kafka']['consumer_group']
-        )
+    # Read from Kafka
+    kafka_source = create_kafka_source(
+        bootstrap_servers=config['kafka']['bootstrap_servers'],
+        topic='user-events',
+        consumer_group=config['kafka']['consumer_group']
+    )
 
-        # Create the pipeline
-        (
-            pipeline
-            | 'ReadFromKafka' >> kafka_source
-            | 'ParseMessages' >> beam.ParDo(ParseKafkaMessage())
-            | 'PrepareForBigQuery' >> beam.ParDo(PrepareBigQueryRecord())
-            | 'WriteToBigQuery' >> create_bigquery_sink(table_spec, schema_path)
-        )
+    # Define the pipeline steps
+    (
+        pipeline
+        | 'ReadFromKafka' >> kafka_source
+        | 'ParseMessages' >> beam.ParDo(ParseKafkaMessage())
+        | 'PrepareForBigQuery' >> beam.ParDo(PrepareBigQueryRecord())
+        | 'WriteToBigQuery' >> create_bigquery_sink(table_spec, schema_path)
+    )
 
-        logging.info("Pipeline created successfully")
+    logging.info("Pipeline graph created successfully")
+
+    # Run the pipeline
+    result = pipeline.run()
+    logging.info("Pipeline submitted successfully")
+
+    # For streaming jobs on Dataflow, we don't want to block.
+    # For other runners (like DirectRunner), we should wait for completion.
+    if not (config["runner"] == "DataflowRunner" and config["pipeline"]["streaming"]):
+        logging.info("Waiting for pipeline to complete...")
+        result.wait_until_finish()
+    else:
+        logging.info(
+            "Streaming pipeline submitted to Dataflow. The script will now exit.")
 
 
 def main():
