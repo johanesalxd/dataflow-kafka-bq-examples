@@ -1,0 +1,38 @@
+[
+  {
+    "name": "product_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Product identifier"
+  },
+  {
+    "name": "product_name",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Product name"
+  },
+  {
+    "name": "price",
+    "type": "FLOAT",
+    "mode": "REQUIRED",
+    "description": "Product price"
+  },
+  {
+    "name": "category",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Product category"
+  },
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Update timestamp"
+  },
+  {
+    "name": "processing_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Pipeline processing timestamp"
+  }
+]

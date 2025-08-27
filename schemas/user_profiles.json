@@ -1,0 +1,38 @@
+[
+  {
+    "name": "user_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "User identifier"
+  },
+  {
+    "name": "username",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Username"
+  },
+  {
+    "name": "user_segment",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "User segment (premium, regular, new)"
+  },
+  {
+    "name": "registration_date",
+    "type": "DATE",
+    "mode": "REQUIRED",
+    "description": "User registration date"
+  },
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Profile update timestamp"
+  },
+  {
+    "name": "processing_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Pipeline processing timestamp"
+  }
+]
