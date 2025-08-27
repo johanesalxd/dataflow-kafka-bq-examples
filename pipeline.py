@@ -143,7 +143,6 @@ def create_topic_pipeline(pipeline, topic_config: Dict[str, Any], config: Dict[s
 
     raw_sink, raw_dlq_sink, raw_prepare = create_bigquery_pipeline_branch(
         table_spec=raw_table_spec,
-        schema_path=schema_path,
         table_type="raw"
     )
 

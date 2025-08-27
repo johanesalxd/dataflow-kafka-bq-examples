@@ -3,7 +3,7 @@
 from datetime import datetime
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import apache_beam as beam
 from apache_beam.io.gcp.bigquery import BigQueryDisposition
@@ -74,7 +74,7 @@ class PrepareBigQueryRecord(beam.DoFn):
             })
 
 
-def create_bigquery_sink(table_spec: str, schema_path: str = None, create_disposition: str = "CREATE_IF_NEEDED"):
+def create_bigquery_sink(table_spec: str, schema_path: Optional[str] = None, create_disposition: str = "CREATE_IF_NEEDED"):
     """
     Create BigQuery sink transform.
 
@@ -92,7 +92,11 @@ def create_bigquery_sink(table_spec: str, schema_path: str = None, create_dispos
     if schema_path:
         try:
             with open(schema_path, 'r') as f:
-                table_schema = json.load(f)
+                schema_data = json.load(f)
+                if isinstance(schema_data, list):
+                    table_schema = {'fields': schema_data}
+                else:
+                    table_schema = schema_data
         except Exception as e:
             logging.warning(f"Could not load schema from {schema_path}: {e}")
 
@@ -185,7 +189,7 @@ class FormatDLQRecord(beam.DoFn):
             }
 
 
-def create_bigquery_pipeline_branch(table_spec: str, schema_path: str = None, table_type: str = "raw"):
+def create_bigquery_pipeline_branch(table_spec: str, schema_path: Optional[str] = None, table_type: str = "raw"):
     """
     Create a complete BigQuery pipeline branch with DLQ handling.
 
