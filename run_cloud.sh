@@ -76,12 +76,20 @@ bq mk --dataset --location=US $PROJECT:$DATASET 2>/dev/null || echo "Dataset alr
 JOB_NAME="kafka-bq-demo-cloud-$(date +%Y%m%d-%H%M%S)"
 echo "Starting Dataflow pipeline: $JOB_NAME"
 
+# Submit the pipeline - DataflowRunner will submit and return immediately
+echo "Submitting pipeline to Dataflow..."
 python pipeline.py \
     --environment cloud \
     --config config.yaml \
-    --job_name "$JOB_NAME"
+    --job_name "$JOB_NAME" \
+    --setup_file ./setup.py
 
+echo ""
 echo "Pipeline submitted successfully!"
 echo "Job name: $JOB_NAME"
 echo "Monitor the pipeline at:"
 echo "https://console.cloud.google.com/dataflow/jobs?project=$PROJECT"
+echo ""
+echo "Note: This is a streaming pipeline that will run indefinitely."
+echo "To stop the pipeline, use the Dataflow console or run:"
+echo "gcloud dataflow jobs cancel $JOB_NAME --region=us-central1"
