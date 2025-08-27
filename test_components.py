@@ -23,6 +23,11 @@ def test_imports():
         from utils.config_loader import validate_config
         print("✅ Utils imported successfully")
 
+        # Make load_config available globally for other tests
+        globals()['load_config'] = load_config
+        globals()['validate_config'] = validate_config
+        globals()['get_table_spec'] = get_table_spec
+
         # Test transform imports (these will show import errors but that's expected without dependencies)
         try:
             from transforms.aggregations import \
@@ -46,6 +51,11 @@ def test_config_loading():
     print("\nTesting configuration loading...")
 
     try:
+        # Import functions locally
+        from utils.config_loader import get_table_spec
+        from utils.config_loader import load_config
+        from utils.config_loader import validate_config
+
         # Test loading local config
         config = load_config('config.yaml', 'local')
         print("✅ Configuration loaded successfully")
