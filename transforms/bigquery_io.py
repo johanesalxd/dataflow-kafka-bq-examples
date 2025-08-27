@@ -125,17 +125,8 @@ def create_dlq_sink(table_spec: str):
         WriteToBigQuery transform for DLQ
     """
 
-    # DLQ schema
-    dlq_schema = [
-        {'name': 'original_record', 'type': 'STRING', 'mode': 'NULLABLE'},
-        {'name': 'original_data', 'type': 'STRING', 'mode': 'NULLABLE'},
-        {'name': 'message', 'type': 'STRING', 'mode': 'NULLABLE'},
-        {'name': 'raw_message', 'type': 'STRING', 'mode': 'NULLABLE'},
-        {'name': 'topic', 'type': 'STRING', 'mode': 'NULLABLE'},
-        {'name': 'error', 'type': 'STRING', 'mode': 'REQUIRED'},
-        {'name': 'processing_time', 'type': 'TIMESTAMP', 'mode': 'REQUIRED'},
-        {'name': 'table_type', 'type': 'STRING', 'mode': 'NULLABLE'}
-    ]
+    # DLQ schema in string format
+    dlq_schema = "original_record:STRING,original_data:STRING,message:STRING,raw_message:STRING,topic:STRING,error:STRING,processing_time:TIMESTAMP,table_type:STRING"
 
     return WriteToBigQuery(
         table=table_spec,

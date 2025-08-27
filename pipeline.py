@@ -12,6 +12,7 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import GoogleCloudOptions
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.options.pipeline_options import StandardOptions
+
 from transforms.aggregations import create_aggregation_pipeline
 from transforms.aggregations import PrepareForBigQuery
 from transforms.bigquery_io import create_bigquery_pipeline_branch
@@ -47,10 +48,13 @@ def create_pipeline_options(config: Dict[str, Any], args) -> PipelineOptions:
     """
     pipeline_args = [
         f'--runner={config["runner"]}',
-        f'--streaming={config["pipeline"]["streaming"]}',
-        '--save_main_session=True',
+        '--save_main_session',
         '--setup_file=./setup.py'
     ]
+
+    # Add streaming flag if enabled
+    if config["pipeline"]["streaming"]:
+        pipeline_args.append('--streaming')
 
     # Add job name if provided
     if args.job_name:

@@ -125,9 +125,9 @@ def create_kafka_source(bootstrap_servers: str, topic: str, consumer_group: str)
             'bootstrap.servers': bootstrap_servers,
             'group.id': consumer_group,
             'auto.offset.reset': 'latest',  # Start from latest for demo
-            'enable.auto.commit': True,
-            'session.timeout.ms': 30000,
-            'request.timeout.ms': 40000
+            'enable.auto.commit': 'true',
+            'session.timeout.ms': '30000',
+            'request.timeout.ms': '40000'
         },
         topics=[topic],
         with_metadata=False,
