@@ -49,8 +49,8 @@ user-profiles ───┬──> Raw ──────────────
 ### 1. Clone and Setup
 
 ```bash
-git clone <repository-url>
-cd dataflow-kafka-bq-demo
+git clone https://github.com/johanesalxd/dataflow-kafka-bq-examples.git
+cd dataflow-kafka-bq-examples
 
 # Update configuration with your GCP project
 sed -i 's/your-project-id/YOUR_ACTUAL_PROJECT_ID/g' config.yaml
@@ -187,7 +187,7 @@ pipeline:
 ## 🗂️ Project Structure
 
 ```
-dataflow-kafka-bq-demo/
+dataflow-kafka-bq-examples/
 ├── pipeline.py                 # Main pipeline logic
 ├── data_generator.py           # Sample data generator
 ├── config.yaml                 # Configuration file

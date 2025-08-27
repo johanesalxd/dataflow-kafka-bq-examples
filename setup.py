@@ -11,7 +11,7 @@ with open("requirements.txt", "r") as f:
                     and not line.startswith("#")]
 
 setuptools.setup(
-    name="dataflow-kafka-bq-demo",
+    name="dataflow-kafka-bq-examples",
     version="1.0.0",
     author="Dataflow Demo",
     author_email="demo@example.com",
