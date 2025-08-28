@@ -4,12 +4,12 @@
 set -e
 
 # --- Configuration ---
-PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
+PROJECT_ID="your-project-id" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
 REGION="us-central1" # <-- Change to your preferred region
-TEMP_BUCKET="gs://johanesa-playground-326616-dataflow" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
+TEMP_BUCKET="gs://your-gcs-bucket" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
 BIGQUERY_DATASET="dataflow_demo"
 BIGQUERY_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events"
-KAFKA_BOOTSTRAP_SERVERS="34.132.61.26:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
+KAFKA_BOOTSTRAP_SERVERS="EXTERNAL_IP:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
 KAFKA_TOPIC="user-events"
 CONSUMER_GROUP_ID="dataflow-kafka-to-bq-consumer"
 JAR_FILE="target/dataflow-kafka-bq-examples-1.0-SNAPSHOT.jar"

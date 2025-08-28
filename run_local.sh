@@ -4,7 +4,7 @@
 set -e
 
 # --- Configuration ---
-PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
+PROJECT_ID="your-project-id" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
 BIGQUERY_TABLE="${PROJECT_ID}:dataflow_demo_local.raw_user_events"
 KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 KAFKA_TOPIC="user-events"

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "event_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Event timestamp from message"
+  },
+  {
+    "name": "processing_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Pipeline processing timestamp"
+  },
+  {
+    "name": "payload",
+    "type": "JSON",
+    "mode": "NULLABLE",
+    "description": "Full message payload"
+  }
+]
