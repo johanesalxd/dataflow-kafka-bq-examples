@@ -4,43 +4,36 @@
 set -e
 
 # --- Configuration ---
-ENV="local"
 PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
-CONFIG_FILE="config.yaml"
-PIPELINE_FILE="pipeline.py"
+BIGQUERY_TABLE="${PROJECT_ID}:dataflow_demo_local.raw_user_events"
+KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+KAFKA_TOPIC="user-events"
+JAR_FILE="target/dataflow-kafka-bq-examples-1.0-SNAPSHOT.jar"
 
 # --- Main Script ---
 
-# 1. Set up virtual environment if it doesn't exist
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv .venv
-fi
+# 1. Create BigQuery dataset if it doesn't exist
+echo "Creating BigQuery dataset if it doesn't exist..."
+bq show --dataset ${PROJECT_ID}:dataflow_demo_local || bq mk --dataset ${PROJECT_ID}:dataflow_demo_local
 
-# 2. Activate virtual environment
-echo "Activating virtual environment..."
-source .venv/bin/activate
+# 2. Update BigQuery table in KafkaToBigQuery.java
+echo "Updating BigQuery table in KafkaToBigQuery.java to '${BIGQUERY_TABLE}'..."
+sed -i "s/to(\".*\")/to(\"${BIGQUERY_TABLE}\")/" src/main/java/com/example/KafkaToBigQuery.java
 
-# 3. Install dependencies
-echo "Installing dependencies from requirements.txt..."
-pip install --upgrade pip
-pip install -r requirements.txt
+# 3. Update Kafka bootstrap servers in KafkaToBigQuery.java
+echo "Updating Kafka bootstrap servers in KafkaToBigQuery.java to '${KAFKA_BOOTSTRAP_SERVERS}'..."
+sed -i "s/withBootstrapServers(\".*\")/withBootstrapServers(\"${KAFKA_BOOTSTRAP_SERVERS}\")/" src/main/java/com/example/KafkaToBigQuery.java
 
-# 4. Check for gcloud authentication
-echo "Checking for gcloud authentication..."
-if ! gcloud auth application-default print-access-token &> /dev/null; then
-    echo "You are not authenticated with gcloud. Please run 'gcloud auth application-default login' and try again."
-    exit 1
-fi
+# 4. Update Kafka topic in KafkaToBigQuery.java
+echo "Updating Kafka topic in KafkaToBigQuery.java to '${KAFKA_TOPIC}'..."
+sed -i "s/withTopic(\".*\")/withTopic(\"${KAFKA_TOPIC}\")/" src/main/java/com/example/KafkaToBigQuery.java
 
-# 5. Update project ID in config.yaml
-echo "Updating project ID in ${CONFIG_FILE} to '${PROJECT_ID}'..."
-sed -i "s/project_id: .*/project_id: ${PROJECT_ID}/" ${CONFIG_FILE}
+# 5. Compile and package the pipeline with Maven
+echo "Compiling and packaging the pipeline with Maven..."
+mvn clean package
 
 # 6. Run the pipeline
-echo "Running the Dataflow pipeline..."
-python ${PIPELINE_FILE} \
-    --config ${CONFIG_FILE} \
-    --environment ${ENV}
+echo "Running the pipeline..."
+java -jar ${JAR_FILE} --runner=DirectRunner --project=${PROJECT_ID}
 
 echo "Pipeline finished."

@@ -1,3 +1,6 @@
 __pycache__
 mise.toml
 .venv/
+target/*
+.vscode/*
+dependency-reduced-pom.xml

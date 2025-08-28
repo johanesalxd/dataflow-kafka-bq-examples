@@ -1,19 +1,2 @@
-# Apache Beam with Google Cloud Platform support
-apache-beam[gcp]>=2.60.0
-
 # Kafka support
 kafka-python>=2.0.2
-
-# Configuration management
-PyYAML>=6.0.1
-
-# Additional utilities
-google-cloud-bigquery>=3.13.0
-google-cloud-storage>=2.10.0
-
-# Development and testing
-pytest>=7.4.3
-pytest-mock>=3.12.0
-
-# Logging
-structlog>=23.2.0
