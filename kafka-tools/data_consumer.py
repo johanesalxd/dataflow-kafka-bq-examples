@@ -50,18 +50,27 @@ class DataConsumer:
         """
         auto_offset_reset = 'earliest' if from_beginning else 'latest'
 
-        self.consumer = KafkaConsumer(
-            *topics,
-            bootstrap_servers=self.bootstrap_servers,
-            group_id=self.consumer_group,
-            auto_offset_reset=auto_offset_reset,
-            enable_auto_commit=True,
-            auto_commit_interval_ms=1000,
-            value_deserializer=lambda m: json.loads(
+        consumer_config = {
+            'bootstrap_servers': self.bootstrap_servers,
+            'group_id': self.consumer_group,
+            'auto_offset_reset': auto_offset_reset,
+            'enable_auto_commit': True,
+            'auto_commit_interval_ms': 1000,
+            'value_deserializer': lambda m: json.loads(
                 m.decode('utf-8')) if m else None,
-            key_deserializer=lambda k: k.decode('utf-8') if k else None,
-            consumer_timeout_ms=1000  # Timeout for batch mode
-        )
+            'key_deserializer': lambda k: k.decode('utf-8') if k else None,
+            'session_timeout_ms': 30000,  # Increased session timeout
+            'heartbeat_interval_ms': 10000,  # Increased heartbeat interval
+            'max_poll_interval_ms': 300000,  # Increased max poll interval
+            'request_timeout_ms': 40000,  # Increased request timeout
+        }
+
+        # Only add consumer_timeout_ms for batch mode
+        if from_beginning or hasattr(self, '_batch_mode'):
+            # Increased timeout for batch mode
+            consumer_config['consumer_timeout_ms'] = 10000
+
+        self.consumer = KafkaConsumer(*topics, **consumer_config)
 
         logging.info(f"Created consumer for topics: {topics}")
         logging.info(f"Consumer group: {self.consumer_group}")
