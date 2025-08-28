@@ -1,0 +1,32 @@
+[
+  {
+    "name": "event_type",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Type of event being aggregated"
+  },
+  {
+    "name": "event_count",
+    "type": "INTEGER",
+    "mode": "REQUIRED",
+    "description": "Number of events in the aggregation window"
+  },
+  {
+    "name": "window_start",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Start timestamp of the aggregation window"
+  },
+  {
+    "name": "window_end",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "End timestamp of the aggregation window"
+  },
+  {
+    "name": "processing_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Pipeline processing timestamp"
+  }
+]

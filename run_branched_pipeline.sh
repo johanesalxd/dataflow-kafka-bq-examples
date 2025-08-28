@@ -8,9 +8,10 @@ PROJECT_ID="your-project-id" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
 REGION="us-central1" # <-- Change to your preferred region
 TEMP_BUCKET="gs://your-gcs-bucket" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
 BIGQUERY_DATASET="dataflow_demo"
-# Table configurations for both branches
+# Table configurations for all three branches
 FLATTENED_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events"
 GENERIC_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events_flex"
+SQL_AGGREGATION_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.user_event_aggregations"
 KAFKA_BOOTSTRAP_SERVERS="EXTERNAL_IP:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
 KAFKA_TOPIC="user-events"
 CONSUMER_GROUP_ID="dataflow-branched-kafka-to-bq-consumer"
@@ -27,6 +28,7 @@ echo "Job Name: ${JOB_NAME}"
 echo "Kafka Server: ${KAFKA_BOOTSTRAP_SERVERS}"
 echo "Flattened Table: ${FLATTENED_TABLE}"
 echo "Generic Table: ${GENERIC_TABLE}"
+echo "SQL Aggregation Table: ${SQL_AGGREGATION_TABLE}"
 echo ""
 
 # 1. Create GCS bucket if it doesn't exist
@@ -46,11 +48,24 @@ bq mk --table \
 ${GENERIC_TABLE} \
 schemas/generic_table.json || echo "Generic table already exists"
 
-# 4. Compile and package the pipeline with Maven
+echo "Creating SQL aggregation BigQuery table if it doesn't exist..."
+bq mk --table \
+--description "Table to store SQL aggregated user events by type in 1-minute windows" \
+--time_partitioning_field=window_start \
+--time_partitioning_type=DAY \
+${SQL_AGGREGATION_TABLE} \
+schemas/user_event_aggregations.json || echo "SQL aggregation table already exists"
+
+# 4. Copy SQL files to resources directory for packaging
+echo "Copying SQL files to resources directory..."
+mkdir -p src/main/resources/udf
+cp udf/user_event_aggregations.sql src/main/resources/udf/
+
+# 5. Compile and package the pipeline with Maven
 echo "Compiling and packaging the pipeline with Maven..."
 mvn clean package
 
-# 5. Run the pipeline on Dataflow
+# 6. Run the pipeline on Dataflow
 echo "Submitting branched pipeline to Dataflow..."
 echo "Kafka read offset: ${KAFKA_READ_OFFSET}"
 java -jar ${JAR_FILE} \
@@ -64,6 +79,7 @@ java -jar ${JAR_FILE} \
     --topic=${KAFKA_TOPIC} \
     --outputTable=${FLATTENED_TABLE} \
     --genericOutputTable=${GENERIC_TABLE} \
+    --sqlAggregationTable=${SQL_AGGREGATION_TABLE} \
     --consumerGroupId=${CONSUMER_GROUP_ID} \
     --kafkaReadOffset=${KAFKA_READ_OFFSET} \
     --streaming \
@@ -73,10 +89,15 @@ java -jar ${JAR_FILE} \
 echo ""
 echo "=== Job Submitted Successfully ==="
 echo "The branched pipeline has been submitted to Dataflow and is starting up..."
-echo "Data will be written to both tables:"
+echo "Data will be written to three tables:"
 echo "  - Flattened: ${FLATTENED_TABLE}"
 echo "  - Generic: ${GENERIC_TABLE}"
+echo "  - SQL Aggregations: ${SQL_AGGREGATION_TABLE}"
 echo "View your job at: https://console.cloud.google.com/dataflow/jobs/${REGION}/${JOB_NAME}?project=${PROJECT_ID}"
 echo "Monitor BigQuery tables:"
 echo "  - Flattened: https://console.cloud.google.com/bigquery?project=${PROJECT_ID}&ws=!1m5!1m4!4m3!1s${PROJECT_ID}!2s${BIGQUERY_DATASET}!3sraw_user_events"
 echo "  - Generic: https://console.cloud.google.com/bigquery?project=${PROJECT_ID}&ws=!1m5!1m4!4m3!1s${PROJECT_ID}!2s${BIGQUERY_DATASET}!3sraw_user_events_flex"
+echo "  - SQL Aggregations: https://console.cloud.google.com/bigquery?project=${PROJECT_ID}&ws=!1m5!1m4!4m3!1s${PROJECT_ID}!2s${BIGQUERY_DATASET}!3suser_event_aggregations"
+echo ""
+echo "To view SQL aggregation results, run:"
+echo "  bq query --use_legacy_sql=false 'SELECT * FROM \`${SQL_AGGREGATION_TABLE}\` ORDER BY window_start DESC LIMIT 10'"

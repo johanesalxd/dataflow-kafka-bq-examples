@@ -27,4 +27,8 @@ public interface KafkaPipelineOptions extends PipelineOptions {
     @Description("Kafka read offset (earliest or latest)")
     String getKafkaReadOffset();
     void setKafkaReadOffset(String value);
+
+    @Description("BigQuery output table for SQL aggregated user events")
+    String getSqlAggregationTable();
+    void setSqlAggregationTable(String value);
 }

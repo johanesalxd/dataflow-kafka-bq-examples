@@ -4,15 +4,26 @@ import com.johanesalxd.utils.BigQuerySchema;
 import com.johanesalxd.utils.GenericBigQuerySchema;
 import com.johanesalxd.utils.JsonToTableRow;
 import com.johanesalxd.utils.JsonToGenericTableRow;
+import com.johanesalxd.utils.JsonToRow;
+import com.johanesalxd.utils.SqlQueryReader;
+import com.johanesalxd.utils.UserEventAggregationSchema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.Row;
+import org.apache.beam.sdk.extensions.sql.SqlTransform;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import com.google.api.services.bigquery.model.TableRow;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +77,35 @@ public class KafkaToBigQuery {
                             .to(options.getGenericOutputTable())
                             .withSchema(GenericBigQuerySchema.getSchema())
                             .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                    );
+        }
+
+        // Branch 3: Beam SQL aggregation (only if SQL aggregation table is specified)
+        if (options.getSqlAggregationTable() != null) {
+            kafkaMessages
+                    .apply("ParseToRows", ParDo.of(new JsonToRow()))
+                    .setRowSchema(JsonToRow.SCHEMA)
+                    .apply("ApplyWindowing", Window.<Row>into(FixedWindows.of(Duration.standardMinutes(1))))
+                    .apply("SqlAggregation", SqlTransform.query(
+                            SqlQueryReader.readQuery("user_event_aggregations.sql")))
+                    .apply("ConvertToTableRows", ParDo.of(new DoFn<Row, TableRow>() {
+                        @ProcessElement
+                        public void processElement(ProcessContext c) {
+                            Row row = c.element();
+                            TableRow tableRow = new TableRow();
+                            tableRow.set("event_type", row.getString("event_type"));
+                            tableRow.set("event_count", row.getInt64("event_count"));
+                            tableRow.set("window_start", row.getDateTime("window_start").toString());
+                            tableRow.set("window_end", row.getDateTime("window_end").toString());
+                            tableRow.set("processing_time", Instant.now().toString());
+                            c.output(tableRow);
+                        }
+                    }))
+                    .apply("WriteToAggregationTable", BigQueryIO.writeTableRows()
+                            .to(options.getSqlAggregationTable())
+                            .withSchema(UserEventAggregationSchema.getSchema())
+                            .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                            .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                     );
         }
 
