@@ -4,3 +4,4 @@ mise.toml
 target/*
 .vscode/*
 dependency-reduced-pom.xml
+*.tmp

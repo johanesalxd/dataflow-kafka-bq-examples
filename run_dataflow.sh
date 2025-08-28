@@ -9,8 +9,9 @@ REGION="us-central1" # <-- Change to your preferred region
 TEMP_BUCKET="gs://johanesa-playground-326616-dataflow" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
 BIGQUERY_DATASET="dataflow_demo"
 BIGQUERY_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events"
-KAFKA_BOOTSTRAP_SERVERS="EXTERNAL_IP:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
+KAFKA_BOOTSTRAP_SERVERS="34.132.61.26:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
 KAFKA_TOPIC="user-events"
+CONSUMER_GROUP_ID="dataflow-kafka-to-bq-consumer"
 JAR_FILE="target/dataflow-kafka-bq-examples-1.0-SNAPSHOT.jar"
 JOB_NAME="kafka-to-bq-$(date +%Y%m%d-%H%M%S)"
 
@@ -48,6 +49,7 @@ java -jar ${JAR_FILE} \
     --bootstrapServers=${KAFKA_BOOTSTRAP_SERVERS} \
     --topic=${KAFKA_TOPIC} \
     --outputTable=${BIGQUERY_TABLE} \
+    --consumerGroupId=${CONSUMER_GROUP_ID} \
     --streaming \
     --maxNumWorkers=3 \
     --autoscalingAlgorithm=THROUGHPUT_BASED

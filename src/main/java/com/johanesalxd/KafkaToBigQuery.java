@@ -8,6 +8,10 @@ import org.apache.beam.sdk.io.kafka.KafkaIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class KafkaToBigQuery {
 
@@ -16,11 +20,18 @@ public class KafkaToBigQuery {
         KafkaPipelineOptions options = PipelineOptionsFactory.fromArgs(args).withValidation().as(KafkaPipelineOptions.class);
         Pipeline p = Pipeline.create(options);
 
+        // Configure Kafka consumer properties
+        Map<String, Object> consumerConfig = new HashMap<>();
+        if (options.getConsumerGroupId() != null) {
+            consumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, options.getConsumerGroupId());
+        }
+
         p.apply("ReadFromKafka", KafkaIO.<String, String>read()
                 .withBootstrapServers(options.getBootstrapServers())
                 .withTopic(options.getTopic())
                 .withKeyDeserializer(StringDeserializer.class)
                 .withValueDeserializer(StringDeserializer.class)
+                .withConsumerConfigUpdates(consumerConfig)
                 .withoutMetadata()
         )
         .apply("ParseMessage", ParDo.of(new JsonToTableRow()))

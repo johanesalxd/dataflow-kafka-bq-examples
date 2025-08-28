@@ -15,4 +15,8 @@ public interface KafkaPipelineOptions extends PipelineOptions {
     @Description("BigQuery output table")
     String getOutputTable();
     void setOutputTable(String value);
+
+    @Description("Kafka consumer group ID")
+    String getConsumerGroupId();
+    void setConsumerGroupId(String value);
 }

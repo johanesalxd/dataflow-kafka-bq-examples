@@ -8,6 +8,7 @@ PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID
 BIGQUERY_TABLE="${PROJECT_ID}:dataflow_demo_local.raw_user_events"
 KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 KAFKA_TOPIC="user-events"
+CONSUMER_GROUP_ID="local-kafka-to-bq-consumer"
 JAR_FILE="target/dataflow-kafka-bq-examples-1.0-SNAPSHOT.jar"
 
 # --- Main Script ---
@@ -27,6 +28,7 @@ java -jar ${JAR_FILE} \
     --project=${PROJECT_ID} \
     --bootstrapServers=${KAFKA_BOOTSTRAP_SERVERS} \
     --topic=${KAFKA_TOPIC} \
-    --outputTable=${BIGQUERY_TABLE}
+    --outputTable=${BIGQUERY_TABLE} \
+    --consumerGroupId=${CONSUMER_GROUP_ID}
 
 echo "Pipeline finished."
