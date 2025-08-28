@@ -1,6 +1,5 @@
 package com.johanesalxd;
 
-import com.google.api.services.bigquery.model.TableRow;
 import com.johanesalxd.utils.BigQuerySchema;
 import com.johanesalxd.utils.JsonToTableRow;
 import org.apache.beam.sdk.Pipeline;
@@ -8,7 +7,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.KV;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 public class KafkaToBigQuery {
@@ -33,6 +31,12 @@ public class KafkaToBigQuery {
                 .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
         );
 
-        p.run().waitUntilFinish();
+        // For Dataflow, just submit the job and exit
+        // For local DirectRunner, wait until finish
+        if (options.getRunner().getName().contains("DataflowRunner")) {
+            p.run();
+        } else {
+            p.run().waitUntilFinish();
+        }
     }
 }
