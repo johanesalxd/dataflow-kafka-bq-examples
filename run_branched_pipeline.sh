@@ -4,16 +4,17 @@
 set -e
 
 # --- Configuration ---
-PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
+PROJECT_ID="your-project-id" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
 REGION="us-central1" # <-- Change to your preferred region
-TEMP_BUCKET="gs://johanesa-playground-326616-dataflow" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
+TEMP_BUCKET="gs://your-gcs-bucket" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
 BIGQUERY_DATASET="dataflow_demo"
 # Table configurations for both branches
 FLATTENED_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events"
 GENERIC_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_events_flex"
-KAFKA_BOOTSTRAP_SERVERS="34.132.61.26:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
+KAFKA_BOOTSTRAP_SERVERS="EXTERNAL_IP:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
 KAFKA_TOPIC="user-events"
 CONSUMER_GROUP_ID="dataflow-branched-kafka-to-bq-consumer"
+KAFKA_READ_OFFSET="earliest" # Set to "earliest" to read from beginning, "latest" for new messages only
 JAR_FILE="target/dataflow-kafka-bq-examples-1.0-SNAPSHOT.jar"
 JOB_NAME="kafka-to-bq-branched-$(date +%Y%m%d-%H%M%S)"
 
@@ -51,6 +52,7 @@ mvn clean package
 
 # 5. Run the pipeline on Dataflow
 echo "Submitting branched pipeline to Dataflow..."
+echo "Kafka read offset: ${KAFKA_READ_OFFSET}"
 java -jar ${JAR_FILE} \
     --runner=DataflowRunner \
     --project=${PROJECT_ID} \
@@ -63,6 +65,7 @@ java -jar ${JAR_FILE} \
     --outputTable=${FLATTENED_TABLE} \
     --genericOutputTable=${GENERIC_TABLE} \
     --consumerGroupId=${CONSUMER_GROUP_ID} \
+    --kafkaReadOffset=${KAFKA_READ_OFFSET} \
     --streaming \
     --maxNumWorkers=3 \
     --autoscalingAlgorithm=THROUGHPUT_BASED

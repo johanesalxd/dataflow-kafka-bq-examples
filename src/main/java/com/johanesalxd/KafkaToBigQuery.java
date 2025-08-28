@@ -30,6 +30,14 @@ public class KafkaToBigQuery {
             consumerConfig.put(ConsumerConfig.GROUP_ID_CONFIG, options.getConsumerGroupId());
         }
 
+        // Set Kafka read offset (default to latest if not specified)
+        String kafkaOffset = options.getKafkaReadOffset();
+        if (kafkaOffset != null && kafkaOffset.equalsIgnoreCase("earliest")) {
+            consumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        } else {
+            consumerConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        }
+
         // Read from Kafka once - this will be the source for both branches
         PCollection<KV<String, String>> kafkaMessages = p.apply("ReadFromKafka", KafkaIO.<String, String>read()
                 .withBootstrapServers(options.getBootstrapServers())

@@ -23,4 +23,8 @@ public interface KafkaPipelineOptions extends PipelineOptions {
     @Description("BigQuery generic output table for raw JSON payloads")
     String getGenericOutputTable();
     void setGenericOutputTable(String value);
+
+    @Description("Kafka read offset (earliest or latest)")
+    String getKafkaReadOffset();
+    void setKafkaReadOffset(String value);
 }
