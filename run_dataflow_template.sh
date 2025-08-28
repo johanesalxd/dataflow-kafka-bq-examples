@@ -38,6 +38,8 @@ bq show --dataset ${PROJECT_ID}:${BIGQUERY_DATASET} || bq mk --dataset ${PROJECT
 echo "Creating BigQuery table if it doesn't exist..."
 bq mk --table \
 --description "Table to store raw Kafka JSON payloads with timestamps" \
+--time_partitioning_field=event_time \
+--time_partitioning_type=DAY \
 ${BIGQUERY_TABLE} \
 schemas/generic_table.json || echo "Table already exists"
 
