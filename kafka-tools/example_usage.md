@@ -46,7 +46,7 @@ python kafka-tools/data_generator.py --mode continuous --rate 30
 
 Generate data for specific topics only:
 ```bash
-python kafka-tools/data_generator.py --topics user-events product-updates --batch-size 20
+python kafka-tools/data_generator.py --topics user-events product-updates --batch-size 20 --bootstrap-servers localhost:9092
 ```
 
 ### 2. Consume Data (Consumer)
@@ -68,7 +68,7 @@ python kafka-tools/data_consumer.py --mode batch --batch-size 20 --from-beginnin
 
 Consume from specific topics only:
 ```bash
-python kafka-tools/data_consumer.py --topics user-events --mode continuous
+python kafka-tools/data_consumer.py --topics user-events --mode continuous --bootstrap-servers localhost:9092
 ```
 
 Use a custom consumer group:
