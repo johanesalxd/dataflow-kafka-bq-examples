@@ -36,10 +36,24 @@ This repository contains examples for streaming data from Kafka to BigQuery usin
 │       ├── UserProfileToRow.java           # NEW
 │       ├── ProductUpdateToRow.java         # NEW
 │       ├── EnrichedEventToTableRow.java    # NEW
+│       ├── TableRowToUserProfileRow.java   # NEW
+│       ├── EnrichWithUserProfileDoFn.java  # NEW
 │       └── SqlQueryReader.java
+├── src/main/resources/udf/                 # SQL queries for Beam SQL
+│   ├── enriched_events_join.sql            # Multi-stream join query (NEW)
+│   └── user_event_aggregations.sql         # Event aggregation query
 ├── kafka-tools/                            # Kafka producer/consumer tools
 │   ├── data_generator.py
-│   └── data_consumer.py
+│   ├── data_consumer.py
+│   ├── detailed_consumer_groups.py
+│   ├── docker-compose.yml
+│   ├── example_usage.md
+│   ├── requirements.txt
+│   └── vm-deployment/                      # VM deployment scripts
+│       ├── 1-provision-kafka-vm.sh
+│       ├── 2-setup-kafka-vm.sh
+│       ├── docker-compose-vm.yml
+│       └── example_usage.md
 └── schemas/                                # JSON schemas for BigQuery
     ├── user_events.json
     ├── user_profiles.json                  # NEW
@@ -166,32 +180,14 @@ The SQL aggregation branch demonstrates **Beam SQL** capabilities with 1-minute 
 
 For demonstrating advanced stream processing with multiple Kafka topics and Beam SQL joins:
 
-1.  **Start Kafka:** (same as above)
-2.  **Generate Sample Data for Multiple Topics:**
-    ```bash
-    # Generate data for all three topics
-    python3 kafka-tools/data_generator.py --topics user-events,user-profiles,product-updates
-    ```
-3.  **Deploy Multi-Stream Pipeline:**
-    ```bash
-    # Edit run_multi_pipeline.sh with your GCP settings
-    ./run_multi_pipeline.sh
-    ```
+```bash
+# Edit run_multi_pipeline.sh with your GCP settings
+./run_multi_pipeline.sh
+```
 
-This pipeline demonstrates **two independent pipelines** running in the same job:
-- **Pipeline 1**: Simple `user-profiles` → BigQuery (demonstrates basic multi-pipeline)
-- **Pipeline 2**: Complex multi-stream join using Beam SQL:
-  - Reads from `user-events`, `product-updates`, and `user-profiles` topics
-  - Performs LEFT JOINs using Beam SQL
-  - Outputs enriched events with user and product information
+This pipeline demonstrates advanced multi-stream joins with BigQuery side inputs and Beam SQL.
 
-**Key Features:**
-- Independent pipeline execution (one can fail without affecting the other)
-- Stream-to-stream joins with 1-minute windows
-- Beam SQL for complex join logic
-- Enriched output combining all three data sources
-
-See `MULTI_PIPELINE_README.md` for detailed documentation.
+📖 **For detailed documentation, see [MULTI_PIPELINE_README.md](MULTI_PIPELINE_README.md)**
 
 ## Deploying to Google Cloud Dataflow
 

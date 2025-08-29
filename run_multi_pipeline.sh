@@ -37,6 +37,7 @@ echo "User Profiles Table: ${USER_PROFILES_TABLE}"
 echo "Enriched Events Table: ${ENRICHED_EVENTS_TABLE}"
 echo ""
 
+
 # 1. Create GCS bucket if it doesn't exist
 echo "Creating GCS bucket if it doesn't exist..."
 gsutil ls ${TEMP_BUCKET} 2>/dev/null || gsutil mb -p ${PROJECT_ID} ${TEMP_BUCKET}

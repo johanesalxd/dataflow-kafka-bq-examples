@@ -1,25 +1,41 @@
 # Multi-Pipeline Beam Example
 
-This project demonstrates how to implement multiple independent Apache Beam pipelines within a single job, showcasing stream-to-stream joins using Beam SQL.
+This project demonstrates how to implement multiple independent Apache Beam pipelines within a single job, showcasing stream-to-stream joins using Beam SQL and BigQuery side inputs.
 
 ## Architecture Overview
 
-The implementation consists of two independent pipelines:
+The implementation consists of two independent pipelines with a hybrid join approach:
 
 ### Pipeline 1: User Profiles (Simple Kafka to BigQuery)
 - **Source**: Kafka topic `user-profiles`
 - **Transform**: Parse JSON to TableRow using generic approach
 - **Sink**: BigQuery table for user profiles
-- **Purpose**: Demonstrates simple Kafka-to-BigQuery pipeline
+- **Purpose**: Demonstrates simple Kafka-to-BigQuery pipeline and creates reference data
 
-### Pipeline 2: Multi-Stream Join with Beam SQL
-- **Sources**:
-  - Kafka topic `user-events`
-  - Kafka topic `product-updates`
-  - Kafka topic `user-profiles` (for joining)
-- **Transform**: Beam SQL joins across all three streams
-- **Sink**: BigQuery table for enriched events
-- **Purpose**: Demonstrates complex stream-to-stream joins using SQL
+### Pipeline 2: Two-Stage Join Pipeline
+- **Stage 1 - SQL Join**:
+  - **Sources**: Kafka topics `user-events` and `product-updates`
+  - **Transform**: Beam SQL join between streaming data
+  - **Purpose**: Join real-time events with product information
+- **Stage 2 - Side Input Enrichment**:
+  - **Source**: BigQuery table (user profiles from Pipeline 1)
+  - **Transform**: Enrich joined data with user profile information using side input
+  - **Sink**: BigQuery table for enriched events
+  - **Purpose**: Demonstrates efficient reference data lookup pattern
+
+## Data Flow Architecture
+
+```
+Pipeline 1:
+Kafka (user-profiles) → BigQuery (user_profiles table)
+
+Pipeline 2:
+Kafka (user-events) ──┐
+                      ├── SQL Join ──> + User Profiles (BigQuery Side Input) ──> BigQuery (enriched_events)
+Kafka (product-updates)─┘                           ↑
+                                                     │
+BigQuery (user_profiles) ────────────────────────────┘
+```
 
 ## Data Schemas
 
@@ -64,7 +80,7 @@ Combined data from all three sources with fields from user_events, product_updat
 
 ## SQL Join Logic
 
-The pipeline uses the following SQL query (`enriched_events_join.sql`):
+The pipeline uses a two-stage join approach. The SQL query (`enriched_events_join.sql`) handles the first stage:
 
 ```sql
 SELECT
@@ -75,34 +91,54 @@ SELECT
     pu.product_id,
     pu.product_name,
     pu.price,
-    pu.category,
-    up.username,
-    up.user_segment,
-    up.registration_date
+    pu.category
 FROM user_events ue
 LEFT JOIN product_updates pu ON ue.product_id = pu.product_id
-LEFT JOIN user_profiles up ON ue.user_id = up.user_id
 ```
+
+The second stage enrichment with user profiles is handled by the `EnrichWithUserProfileDoFn` using BigQuery side input.
 
 ## Key Features
 
 1. **Independent Pipelines**: Two completely separate pipelines that can fail/restart independently
-2. **Beam SQL Integration**: Uses Beam SQL for complex joins instead of manual CoGroupByKey
+2. **Hybrid Join Strategy**: Combines Beam SQL for streaming joins with BigQuery side input for reference data
 3. **Windowing**: Fixed 1-minute windows for stream processing
 4. **Schema Evolution**: Proper schema definitions for all data types
-5. **Error Handling**: Nullable fields for optional joins
+5. **Error Handling**: Nullable fields for optional joins and missing reference data
 6. **Scalable Design**: Can be easily extended with additional streams
+7. **Efficient Reference Data**: Uses BigQuery side input for user profiles instead of streaming joins
 
-## Running the Pipeline
+## Data Generation and Testing
 
 ### Prerequisites
 - Apache Kafka running (external IP accessible)
 - Google Cloud Platform project with Dataflow and BigQuery APIs enabled
 - GCS bucket for temporary storage
 - Maven for building
+- Python environment with kafka-python library
 
-### Dataflow Deployment
-The pipeline is designed for production deployment on Google Cloud Dataflow:
+### Test Data Generation
+
+Before running the pipeline, generate test data using the provided data generator:
+
+1. **First, populate user profiles** (Pipeline 1 will store these in BigQuery):
+   ```bash
+   cd kafka-tools
+   python data_generator.py --bootstrap-servers EXTERNAL_IP:9092 \
+       --mode batch --topics user-profiles --batch-size 100
+   ```
+
+2. **Wait ~30 seconds** for Pipeline 1 to process user profiles to BigQuery
+
+3. **Then start continuous generation** for streaming data:
+   ```bash
+   python data_generator.py --bootstrap-servers EXTERNAL_IP:9092 \
+       --mode continuous --topics user-events product-updates --rate 60
+   ```
+
+4. **Keep the continuous generator running** while the pipeline processes data
+
+### Pipeline Deployment
 
 1. **Configure the deployment script:**
    ```bash

@@ -4,10 +4,11 @@ import com.johanesalxd.schemas.UserProfileBigQuerySchema;
 import com.johanesalxd.schemas.EnrichedEventBigQuerySchema;
 import com.johanesalxd.transforms.JsonToRow;
 import com.johanesalxd.transforms.UserProfileToTableRow;
-import com.johanesalxd.transforms.UserProfileToRow;
 import com.johanesalxd.transforms.ProductUpdateToRow;
 import com.johanesalxd.transforms.EnrichedEventToTableRow;
 import com.johanesalxd.transforms.SqlQueryReader;
+import com.johanesalxd.transforms.TableRowToUserProfileRow;
+import com.johanesalxd.transforms.EnrichWithUserProfileDoFn;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
@@ -15,12 +16,13 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
-import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.transforms.WithKeys;
+import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.extensions.sql.SqlTransform;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -101,32 +103,30 @@ public class MultiPipelineExample {
             .setRowSchema(ProductUpdateToRow.SCHEMA)
             .apply("WindowProductUpdates", Window.<Row>into(FixedWindows.of(Duration.standardMinutes(1))));
 
-            // Read user profiles from Kafka (for joining)
-            PCollection<Row> userProfiles = p.apply("ReadUserProfilesForJoinFromKafka", KafkaIO.<String, String>read()
-                    .withBootstrapServers(options.getBootstrapServers())
-                    .withTopic(options.getUserProfilesTopic())
-                    .withKeyDeserializer(StringDeserializer.class)
-                    .withValueDeserializer(StringDeserializer.class)
-                    .withConsumerConfigUpdates(consumerConfig)
-                    .withoutMetadata()
-            )
-            .apply("ParseUserProfilesForJoinToRow", ParDo.of(new UserProfileToRow()))
-            .setRowSchema(UserProfileToRow.SCHEMA)
-            .apply("WindowUserProfiles", Window.<Row>into(FixedWindows.of(Duration.standardMinutes(1))));
+            // Read user profiles from BigQuery as side input
+            PCollectionView<Map<String, Row>> userProfilesView = p
+                    .apply("ReadUserProfilesFromBQ", BigQueryIO.readTableRows()
+                            .from(options.getUserProfilesTable())
+                            .withMethod(BigQueryIO.TypedRead.Method.DIRECT_READ))
+                    .apply("ConvertBQToUserProfileRow", ParDo.of(new TableRowToUserProfileRow()))
+                    .setRowSchema(TableRowToUserProfileRow.SCHEMA)
+                    .apply("KeyUserProfilesByUserId", WithKeys.of(row -> row.getString("user_id")))
+                    .apply("CreateUserProfileView", View.asMap());
 
-            // Create tuple tags for SQL join
+            // Create tuple tags for SQL join (only events and products)
             TupleTag<Row> userEventsTag = new TupleTag<Row>("user_events"){};
             TupleTag<Row> productUpdatesTag = new TupleTag<Row>("product_updates"){};
-            TupleTag<Row> userProfilesTag = new TupleTag<Row>("user_profiles"){};
 
-            // Combine all streams for SQL join
+            // Combine streaming data for SQL join
             PCollectionTuple inputs = PCollectionTuple.of(userEventsTag, userEvents)
-                    .and(productUpdatesTag, productUpdates)
-                    .and(userProfilesTag, userProfiles);
+                    .and(productUpdatesTag, productUpdates);
 
-            // Apply SQL join
-            inputs.apply("JoinStreamsWithSQL", SqlTransform.query(
+            // Apply SQL join for events and products, then enrich with user profiles
+            inputs.apply("JoinEventsWithProducts", SqlTransform.query(
                     SqlQueryReader.readQuery("enriched_events_join.sql")))
+            .apply("EnrichWithUserProfiles", ParDo.of(new EnrichWithUserProfileDoFn(userProfilesView))
+                    .withSideInputs(userProfilesView))
+            .setRowSchema(EnrichWithUserProfileDoFn.ENRICHED_SCHEMA)
             .apply("ConvertToEnrichedTableRows", ParDo.of(new EnrichedEventToTableRow()))
             .apply("WriteEnrichedEventsToBQ", BigQueryIO.writeTableRows()
                     .to(options.getEnrichedEventsTable())
