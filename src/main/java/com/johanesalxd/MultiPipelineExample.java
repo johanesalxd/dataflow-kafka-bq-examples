@@ -9,6 +9,7 @@ import com.johanesalxd.transforms.EnrichedEventToTableRow;
 import com.johanesalxd.transforms.SqlQueryReader;
 import com.johanesalxd.transforms.TableRowToUserProfileRow;
 import com.johanesalxd.transforms.EnrichWithUserProfileDoFn;
+import com.johanesalxd.transforms.DeduplicateUserProfilesDoFn;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
@@ -18,6 +19,7 @@ import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.transforms.View;
+import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PCollectionView;
@@ -108,12 +110,16 @@ public class MultiPipelineExample {
 
             // Read user profiles from BigQuery as side input
             // Note: Using default method (not DIRECT_READ) for streaming pipeline compatibility
+            // Handle duplicates by taking the latest record per user_id
             PCollectionView<Map<String, Row>> userProfilesView = p
                     .apply("ReadUserProfilesFromBQ", BigQueryIO.readTableRows()
                             .from(options.getUserProfilesTable()))
                     .apply("ConvertBQToUserProfileRow", ParDo.of(new TableRowToUserProfileRow()))
                     .setRowSchema(TableRowToUserProfileRow.SCHEMA)
                     .apply("KeyUserProfilesByUserId", WithKeys.of((Row row) -> row.getString("user_id")))
+                    .setCoder(KvCoder.of(StringUtf8Coder.of(), RowCoder.of(TableRowToUserProfileRow.SCHEMA)))
+                    .apply("GroupUserProfilesByUserId", GroupByKey.create())
+                    .apply("DeduplicateUserProfiles", ParDo.of(new DeduplicateUserProfilesDoFn()))
                     .setCoder(KvCoder.of(StringUtf8Coder.of(), RowCoder.of(TableRowToUserProfileRow.SCHEMA)))
                     .apply("CreateUserProfileView", View.asMap());
 

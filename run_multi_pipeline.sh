@@ -64,7 +64,7 @@ schemas/enriched_events.json || echo "Enriched events table already exists"
 # 4. Copy SQL files to resources directory for packaging
 echo "Copying SQL files to resources directory..."
 mkdir -p src/main/resources/udf
-cp udf/user_event_aggregations.sql src/main/resources/udf/ 2>/dev/null || echo "user_event_aggregations.sql not found, skipping..."
+cp udf/enriched_events_join.sql src/main/resources/udf/
 
 # 5. Compile and package the pipeline with Maven
 echo "Compiling and packaging the multi-pipeline with Maven..."
