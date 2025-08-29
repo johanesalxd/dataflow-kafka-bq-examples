@@ -1,0 +1,74 @@
+[
+  {
+    "name": "event_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Unique identifier for the event"
+  },
+  {
+    "name": "user_id",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "User identifier"
+  },
+  {
+    "name": "event_type",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Type of event (page_view, add_to_cart, purchase, etc.)"
+  },
+  {
+    "name": "event_timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Event timestamp"
+  },
+  {
+    "name": "product_id",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Product identifier from product updates"
+  },
+  {
+    "name": "product_name",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Product name from product updates"
+  },
+  {
+    "name": "price",
+    "type": "FLOAT",
+    "mode": "NULLABLE",
+    "description": "Product price from product updates"
+  },
+  {
+    "name": "category",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Product category from product updates"
+  },
+  {
+    "name": "username",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Username from user profiles"
+  },
+  {
+    "name": "user_segment",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "User segment from user profiles"
+  },
+  {
+    "name": "registration_date",
+    "type": "DATE",
+    "mode": "NULLABLE",
+    "description": "User registration date from user profiles"
+  },
+  {
+    "name": "processing_time",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED",
+    "description": "Pipeline processing timestamp"
+  }
+]
