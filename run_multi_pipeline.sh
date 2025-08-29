@@ -4,9 +4,9 @@
 set -e
 
 # --- Configuration ---
-PROJECT_ID="your-project-id" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
+PROJECT_ID="johanesa-playground-326616" # <-- IMPORTANT: SET YOUR GCP PROJECT ID HERE
 REGION="us-central1" # <-- Change to your preferred region
-TEMP_BUCKET="gs://your-gcs-bucket" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
+TEMP_BUCKET="gs://johanesa-playground-326616-dataflow" # <-- IMPORTANT: SET YOUR GCS BUCKET HERE
 BIGQUERY_DATASET="dataflow_demo"
 
 # Table configurations for multi-pipeline
@@ -14,7 +14,7 @@ USER_PROFILES_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.raw_user_profiles"
 ENRICHED_EVENTS_TABLE="${PROJECT_ID}:${BIGQUERY_DATASET}.enriched_events"
 
 # Kafka configurations
-KAFKA_BOOTSTRAP_SERVERS="EXTERNAL_IP:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
+KAFKA_BOOTSTRAP_SERVERS="34.132.61.26:9092" # Replace with your Kafka's EXTERNAL_IP (no http:// prefix)
 USER_EVENTS_TOPIC="user-events"
 USER_PROFILES_TOPIC="user-profiles"
 PRODUCT_UPDATES_TOPIC="product-updates"

@@ -23,6 +23,9 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.RowCoder;
 import org.apache.beam.sdk.extensions.sql.SqlTransform;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -104,13 +107,14 @@ public class MultiPipelineExample {
             .apply("WindowProductUpdates", Window.<Row>into(FixedWindows.of(Duration.standardMinutes(1))));
 
             // Read user profiles from BigQuery as side input
+            // Note: Using default method (not DIRECT_READ) for streaming pipeline compatibility
             PCollectionView<Map<String, Row>> userProfilesView = p
                     .apply("ReadUserProfilesFromBQ", BigQueryIO.readTableRows()
-                            .from(options.getUserProfilesTable())
-                            .withMethod(BigQueryIO.TypedRead.Method.DIRECT_READ))
+                            .from(options.getUserProfilesTable()))
                     .apply("ConvertBQToUserProfileRow", ParDo.of(new TableRowToUserProfileRow()))
                     .setRowSchema(TableRowToUserProfileRow.SCHEMA)
-                    .apply("KeyUserProfilesByUserId", WithKeys.of(row -> row.getString("user_id")))
+                    .apply("KeyUserProfilesByUserId", WithKeys.of((Row row) -> row.getString("user_id")))
+                    .setCoder(KvCoder.of(StringUtf8Coder.of(), RowCoder.of(TableRowToUserProfileRow.SCHEMA)))
                     .apply("CreateUserProfileView", View.asMap());
 
             // Create tuple tags for SQL join (only events and products)
