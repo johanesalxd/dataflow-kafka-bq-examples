@@ -31,6 +31,7 @@ echo "Generic Table: ${GENERIC_TABLE}"
 echo "SQL Aggregation Table: ${SQL_AGGREGATION_TABLE}"
 echo ""
 
+
 # 1. Create GCS bucket if it doesn't exist
 echo "Creating GCS bucket if it doesn't exist..."
 gsutil ls ${TEMP_BUCKET} 2>/dev/null || gsutil mb -p ${PROJECT_ID} ${TEMP_BUCKET}
