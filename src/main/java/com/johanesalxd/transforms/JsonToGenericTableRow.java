@@ -1,4 +1,4 @@
-package com.johanesalxd.utils;
+package com.johanesalxd.transforms;
 
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.transforms.DoFn;

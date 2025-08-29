@@ -1,4 +1,4 @@
-package com.johanesalxd.utils;
+package com.johanesalxd.transforms;
 
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;

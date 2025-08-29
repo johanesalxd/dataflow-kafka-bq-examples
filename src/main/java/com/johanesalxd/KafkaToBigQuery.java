@@ -1,12 +1,12 @@
 package com.johanesalxd;
 
-import com.johanesalxd.utils.BigQuerySchema;
-import com.johanesalxd.utils.GenericBigQuerySchema;
-import com.johanesalxd.utils.JsonToTableRow;
-import com.johanesalxd.utils.JsonToGenericTableRow;
-import com.johanesalxd.utils.JsonToRow;
-import com.johanesalxd.utils.SqlQueryReader;
-import com.johanesalxd.utils.UserEventAggregationSchema;
+import com.johanesalxd.schemas.UserEventBigQuerySchema;
+import com.johanesalxd.schemas.GenericBigQuerySchema;
+import com.johanesalxd.transforms.JsonToTableRow;
+import com.johanesalxd.transforms.JsonToGenericTableRow;
+import com.johanesalxd.transforms.JsonToRow;
+import com.johanesalxd.transforms.SqlQueryReader;
+import com.johanesalxd.schemas.UserEventAggregationSchema;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
@@ -64,7 +64,7 @@ public class KafkaToBigQuery {
                 .apply("ParseToFlattened", ParDo.of(new JsonToTableRow()))
                 .apply("WriteToFlattenedTable", BigQueryIO.writeTableRows()
                         .to(options.getOutputTable())
-                        .withSchema(BigQuerySchema.getSchema())
+                        .withSchema(UserEventBigQuerySchema.getSchema())
                         .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
                         .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
                 );

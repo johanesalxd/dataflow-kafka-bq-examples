@@ -1,4 +1,4 @@
-package com.johanesalxd.utils;
+package com.johanesalxd.transforms;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package com.johanesalxd.utils;
+package com.johanesalxd.schemas;
 
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableSchema;
