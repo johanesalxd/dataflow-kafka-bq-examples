@@ -66,9 +66,12 @@ echo "Compiling and packaging the pipeline with Maven..."
 mvn clean package
 
 # 6. Run the pipeline on Dataflow
+# NOTE: This uses 'java -cp' approach (requires explicit main class specification)
 echo "Submitting branched pipeline to Dataflow..."
+echo "Execution method: java -cp (with explicit main class)"
+echo "Main class: com.johanesalxd.KafkaToBigQuery"
 echo "Kafka read offset: ${KAFKA_READ_OFFSET}"
-java -jar ${JAR_FILE} \
+java -cp ${JAR_FILE} com.johanesalxd.KafkaToBigQuery \
     --runner=DataflowRunner \
     --project=${PROJECT_ID} \
     --region=${REGION} \

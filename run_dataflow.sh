@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Simple Dataflow Kafka to BigQuery Pipeline
+# This script runs ONLY Branch 1 (flattened approach) of KafkaToBigQuery.java
+# - Reads from single Kafka topic
+# - Writes to single BigQuery table with flattened schema
+# - No generic table, no SQL aggregations (simple production deployment)
+# For advanced features, use run_branched_pipeline.sh instead
+
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
@@ -38,8 +45,10 @@ echo "Compiling and packaging the pipeline with Maven..."
 mvn clean package
 
 # 4. Run the pipeline on Dataflow
+# NOTE: This explicitly runs KafkaToBigQuery.java (Branch 1 only)
 echo "Submitting pipeline to Dataflow..."
-java -jar ${JAR_FILE} \
+echo "Main class: com.johanesalxd.KafkaToBigQuery"
+java -cp ${JAR_FILE} com.johanesalxd.KafkaToBigQuery \
     --runner=DataflowRunner \
     --project=${PROJECT_ID} \
     --region=${REGION} \

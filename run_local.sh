@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Simple Local Kafka to BigQuery Pipeline
+# This script runs ONLY Branch 1 (flattened approach) of KafkaToBigQuery.java
+# - Reads from single Kafka topic
+# - Writes to single BigQuery table with flattened schema
+# - No generic table, no SQL aggregations (keeps it simple for local development)
+
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
@@ -22,8 +28,10 @@ echo "Compiling and packaging the pipeline with Maven..."
 mvn clean package
 
 # 3. Run the pipeline
+# NOTE: This explicitly runs KafkaToBigQuery.java (Branch 1 only)
 echo "Running the pipeline..."
-java -jar ${JAR_FILE} \
+echo "Main class: com.johanesalxd.KafkaToBigQuery"
+java -cp ${JAR_FILE} com.johanesalxd.KafkaToBigQuery \
     --runner=DirectRunner \
     --project=${PROJECT_ID} \
     --bootstrapServers=${KAFKA_BOOTSTRAP_SERVERS} \
