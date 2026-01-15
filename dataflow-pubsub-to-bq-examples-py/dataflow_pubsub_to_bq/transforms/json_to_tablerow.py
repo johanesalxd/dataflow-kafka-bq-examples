@@ -3,10 +3,12 @@
 from datetime import datetime
 import json
 import logging
+import time
 from typing import Any, Dict
 
 import apache_beam as beam
 from apache_beam.io.gcp.pubsub import PubsubMessage
+from apache_beam.utils.timestamp import Timestamp
 
 
 class ParsePubSubMessage(beam.DoFn):
@@ -40,21 +42,35 @@ class ParsePubSubMessage(beam.DoFn):
             message_data = element.data.decode('utf-8')
             ride_data = json.loads(message_data)
 
-            # Extract Pub/Sub attributes
-            attributes = element.attributes if element.attributes else {}
-            publish_time_str = attributes.get('publish_time', '')
-            message_id = attributes.get('message_id', '')
+            # Extract Pub/Sub metadata (for data quality checks)
+            message_id = element.message_id if hasattr(
+                element, 'message_id') else ''
 
-            # Convert publish_time to timestamp format if available
-            if publish_time_str:
-                try:
-                    publish_time = datetime.fromisoformat(
-                        publish_time_str.replace('Z', '+00:00')
-                    ).isoformat()
-                except (ValueError, AttributeError):
-                    publish_time = datetime.utcnow().isoformat()
+            # Convert to Beam Timestamp for Storage Write API compatibility
+            # Beam expects Timestamp objects with .micros attribute for TIMESTAMP fields
+            if hasattr(element, 'publish_time') and element.publish_time:
+                publish_time = Timestamp.of(element.publish_time.timestamp())
             else:
-                publish_time = datetime.utcnow().isoformat()
+                publish_time = Timestamp.of(time.time())
+
+            # Extract custom attributes from the message (if any)
+            attributes = element.attributes if element.attributes else {}
+
+            # Parse taxi ride timestamp (ISO 8601 with timezone offset)
+            # Example: "2026-01-15T05:45:49.16882-05:00"
+            ride_timestamp_str = ride_data.get('timestamp', '')
+            if ride_timestamp_str:
+                try:
+                    ride_timestamp = Timestamp.of(
+                        datetime.fromisoformat(ride_timestamp_str).timestamp()
+                    )
+                except (ValueError, AttributeError):
+                    logging.warning(
+                        f"Invalid timestamp format: {ride_timestamp_str}"
+                    )
+                    ride_timestamp = None
+            else:
+                ride_timestamp = None
 
             # Create BigQuery row with all fields
             bq_row = {
@@ -67,7 +83,7 @@ class ParsePubSubMessage(beam.DoFn):
                 'point_idx': ride_data.get('point_idx', 0),
                 'latitude': ride_data.get('latitude', 0.0),
                 'longitude': ride_data.get('longitude', 0.0),
-                'timestamp': ride_data.get('timestamp', ''),
+                'timestamp': ride_timestamp,
                 'meter_reading': ride_data.get('meter_reading', 0.0),
                 'meter_increment': ride_data.get('meter_increment', 0.0),
                 'ride_status': ride_data.get('ride_status', ''),
@@ -97,7 +113,7 @@ def get_bigquery_schema() -> list:
         {'name': 'point_idx', 'type': 'INT64', 'mode': 'NULLABLE'},
         {'name': 'latitude', 'type': 'FLOAT', 'mode': 'NULLABLE'},
         {'name': 'longitude', 'type': 'FLOAT', 'mode': 'NULLABLE'},
-        {'name': 'timestamp', 'type': 'STRING', 'mode': 'NULLABLE'},
+        {'name': 'timestamp', 'type': 'TIMESTAMP', 'mode': 'NULLABLE'},
         {'name': 'meter_reading', 'type': 'FLOAT', 'mode': 'NULLABLE'},
         {'name': 'meter_increment', 'type': 'FLOAT', 'mode': 'NULLABLE'},
         {'name': 'ride_status', 'type': 'STRING', 'mode': 'NULLABLE'},

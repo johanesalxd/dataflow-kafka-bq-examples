@@ -5,7 +5,7 @@
 # - Reads from Pub/Sub subscription (public taxi data)
 # - Writes to BigQuery table with full schema
 # - Uses Runner V2 with fixed 5 workers (n2-standard-4) for scaling test
-# - Python SDK limited to 12 threads per worker (60 total threads)
+# - Python SDK uses default 12 threads per vCPU (48 threads per worker, 240 total threads)
 # - Expected load: ~2,000 RPS from Pub/Sub subscription
 
 set -e
@@ -18,7 +18,7 @@ BIGQUERY_DATASET="demo_dataset"
 BIGQUERY_TABLE="taxi_events"
 SUBSCRIPTION_NAME="taxi_telemetry"
 PUBLIC_TOPIC="projects/pubsub-public-data/topics/taxirides-realtime"
-JOB_NAME="pubsub-to-bq-$(date +%Y%m%d-%H%M%S)"
+JOB_NAME="dataflow-pubsub-to-bq-$(date +%Y%m%d-%H%M%S)"
 
 # Full resource paths
 FULL_SUBSCRIPTION="projects/${PROJECT_ID}/subscriptions/${SUBSCRIPTION_NAME}"
@@ -36,8 +36,8 @@ echo ""
 echo "Scaling Test Configuration:"
 echo "  - Machine Type: n2-standard-4 (4 vCPUs, 16GB RAM)"
 echo "  - Workers: 5 (fixed, no auto-scaling)"
-echo "  - Threads per Worker: 12 (Python SDK max)"
-echo "  - Total Processing Capacity: 60 threads"
+echo "  - Threads per Worker: 48 (12 threads per vCPU × 4 vCPUs)"
+echo "  - Total Processing Capacity: 240 threads (5 workers × 48)"
 echo "  - Expected Load: ~2,000 RPS"
 echo "  - BigQuery Write: Storage Write API with 1-second micro-batching"
 echo ""
@@ -69,7 +69,7 @@ if ! bq show ${FULL_TABLE} 2>/dev/null; then
         --time_partitioning_field=publish_time \
         --time_partitioning_type=DAY \
         --clustering_fields=publish_time \
-        --schema=subscription_name:STRING,message_id:STRING,publish_time:TIMESTAMP,ride_id:STRING,point_idx:INT64,latitude:FLOAT,longitude:FLOAT,timestamp:STRING,meter_reading:FLOAT,meter_increment:FLOAT,ride_status:STRING,passenger_count:INT64,attributes:STRING \
+        --schema=subscription_name:STRING,message_id:STRING,publish_time:TIMESTAMP,ride_id:STRING,point_idx:INT64,latitude:FLOAT,longitude:FLOAT,timestamp:TIMESTAMP,meter_reading:FLOAT,meter_increment:FLOAT,ride_status:STRING,passenger_count:INT64,attributes:STRING \
         ${FULL_TABLE}
 else
     echo "BigQuery table already exists."
@@ -90,7 +90,13 @@ fi
 echo "Installing Python dependencies..."
 uv sync
 
-# 6. Submit pipeline to Dataflow
+# 6. Build package wheel for Dataflow workers
+echo "Building package wheel for Dataflow workers..."
+uv build --wheel
+WHEEL_FILE=$(ls -t dist/*.whl | head -1)
+echo "Built wheel: ${WHEEL_FILE}"
+
+# 7. Submit pipeline to Dataflow
 echo ""
 echo "Submitting pipeline to Dataflow with Runner V2..."
 uv run python -m dataflow_pubsub_to_bq.pipeline \
@@ -105,11 +111,11 @@ uv run python -m dataflow_pubsub_to_bq.pipeline \
     --subscription_name=${SUBSCRIPTION_NAME} \
     --streaming \
     --experiments=use_runner_v2 \
-    --sdk_container_image=apache/beam_python3.9_sdk:2.62.0 \
+    --sdk_container_image=apache/beam_python3.12_sdk:2.70.0 \
+    --extra_packages=${WHEEL_FILE} \
     --machine_type=n2-standard-4 \
     --num_workers=5 \
     --max_num_workers=5 \
-    --number_of_worker_harness_threads=12 \
     --enable_streaming_engine
 
 echo ""
@@ -126,4 +132,4 @@ echo "Scaling Test Metrics to Monitor:"
 echo "  1. System Lag - Should remain low (<10s) if throughput is adequate"
 echo "  2. Throughput - Should be ~2,000 elements/sec"
 echo "  3. CPU Utilization - Watch for bottlenecks"
-echo "  4. Worker Thread Usage - Monitor 12-thread limit per worker"
+echo "  4. Worker Thread Usage - 48 threads per worker (default for n2-standard-4)"
